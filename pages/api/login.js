@@ -1,10 +1,23 @@
-// pages/api/login.js
 import db from './lib/db';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
+  console.log('REQUEST METHOD:', req.method);
+  console.log('BODY:', req.body);
+
+  // Handle preflight (CORS pre-check)
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
+
+  // Set CORS headers for POST response
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
   const { username, password } = req.body;
 
@@ -21,6 +34,7 @@ export default async function handler(req, res) {
     if (rows.length > 0) {
       const user = rows[0];
       return res.status(200).json({
+        success: true,
         message: 'Login berhasil',
         user: {
           username: user.username,
@@ -28,10 +42,10 @@ export default async function handler(req, res) {
         },
       });
     } else {
-      return res.status(401).json({ message: 'Email atau password salah' });
+      return res.status(401).json({ success: false, message: 'Email atau password salah' });
     }
   } catch (error) {
     console.error('Error saat login:', error);
-    return res.status(500).json({ message: 'Terjadi kesalahan server' });
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 }
