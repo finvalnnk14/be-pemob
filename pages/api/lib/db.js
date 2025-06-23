@@ -7,6 +7,7 @@ const db = mysql.createPool({
   user: 'root',
   password: '', // default XAMPP biasanya kosong
   database: 'projek_pemob', // Ganti dengan nama database kamu
+  port: 3306, 
 });
 
 export default db;
