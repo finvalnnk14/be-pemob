@@ -5,25 +5,24 @@ export default async function handler(req, res) {
 
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // === POST: Simpan order baru ===
   if (req.method === 'POST') {
     try {
       const { status, total, timestamp } = req.body;
 
-      // Gunakan nilai default jika status tidak dikirim
       const finalStatus = status || 'pending';
 
       if (!total) {
         return res.status(400).json({ success: false, message: 'Total harus diisi' });
       }
 
-      // Insert satu kali, tanpa loop items
       const query = `
         INSERT INTO \`order\` (status, total, timestamp)
         VALUES (?, ?, ?)
@@ -46,5 +45,42 @@ export default async function handler(req, res) {
     }
   }
 
+  // === GET: Ambil status order berdasarkan ID ===
+ if (req.method === 'GET') {
+  try {
+    const { id, status } = req.query;
+
+    if (!id && !status) {
+      return res.status(400).json({ success: false, message: 'ID atau Status harus diisi' });
+    }
+
+    let rows;
+
+    if (id) {
+      [rows] = await db.query('SELECT * FROM `order` WHERE id = ?', [id]);
+    } else if (status) {
+      [rows] = await db.query('SELECT * FROM `order` WHERE status = ? ORDER BY timestamp DESC LIMIT 1', [status]);
+    }
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Order tidak ditemukan' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: rows.length === 1 ? rows[0] : rows, // kalau mau single object
+    });
+
+  } catch (error) {
+    console.error('Gagal mengambil data:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan saat mengambil data',
+    });
+  }
+}
+
+
+  // === Method selain POST/GET ditolak ===
   return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 }
