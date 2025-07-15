@@ -9,7 +9,6 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Handle GET: ambil semua data dari tabel pembayaran
   if (req.method === 'GET') {
     try {
       const [rows] = await db.query('SELECT * FROM pembayaran ORDER BY timestamp DESC');
@@ -20,12 +19,15 @@ export default async function handler(req, res) {
     }
   }
 
-  // Handle POST: simpan data ke tabel pembayaran
   if (req.method === 'POST') {
     try {
-      const { items, total, timestamp } = req.body;
+      console.log('Body:', req.body);
 
-      if (!items || !total || !timestamp) {
+      const { items, total, timestamp, username } = req.body;
+
+      console.log('Username:', username);
+
+      if (!items || !total || !timestamp || !username) {
         return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
       }
 
@@ -35,11 +37,11 @@ export default async function handler(req, res) {
         if (!name || !price) continue;
 
         const query = `
-          INSERT INTO pembayaran (total, timestamp, nama, price)
-          VALUES (?, ?, ?, ?)
+          INSERT INTO pembayaran (total, timestamp, nama, price, username)
+          VALUES (?, ?, ?, ?, ?)
         `;
 
-        await db.query(query, [total, timestamp, name, price]);
+        await db.query(query, [total, timestamp, name, price, username]);
       }
 
       console.log('Data berhasil dikirim ke DB');
@@ -57,6 +59,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // Method lain ditolak
   return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 }
