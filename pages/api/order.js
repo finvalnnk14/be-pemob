@@ -21,11 +21,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      console.log('Body:', req.body);
-
-      const { items, total, timestamp, username } = req.body;
-
-      console.log('Username:', username);
+      const { items, total, timestamp, username } = req.body; // 🔑 Pastikan kirim username di body
 
       if (!items || !total || !timestamp || !username) {
         return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
