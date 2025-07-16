@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const [rows] = await db.query(`
-        SELECT total, timestamp, harga AS price, username, phone, address
+        SELECT id, total, timestamp, harga AS price, username, phone, address, status
         FROM pengiriman
         ORDER BY timestamp DESC
       `);
@@ -26,15 +26,15 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     try {
-      const { total, timestamp, harga, username, phone, address } = req.body;
+      const { total, timestamp, harga, username, phone, address, status } = req.body;
 
-      if (!total || !timestamp || !harga || !username || !phone || !address) {
+      if (!total || !timestamp || !harga || !username || !phone || !address || !status) {
         return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
       }
 
       const query = `
-        INSERT INTO pengiriman (total, timestamp, harga, username, phone, address)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO pengiriman (total, timestamp, harga, username, phone, address, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
 
       await db.query(query, [total, timestamp, harga, username, phone, address]);
