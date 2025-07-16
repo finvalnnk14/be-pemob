@@ -25,31 +25,84 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    try {
-      const { total, timestamp, harga, username, phone, address, status } = req.body;
+    const { id, status } = req.body;
 
-      if (!total || !timestamp || !harga || !username || !phone || !address || !status) {
-        return res.status(400).json({ success: false, message: 'Data tidak lengkap' });
+    // ✅ 1️⃣ Kalau body ada id & status → UPDATE berdasarkan ID
+    if (id && status) {
+      try {
+        const query = `
+          UPDATE pengiriman
+          SET status = ?
+          WHERE id = ?
+        `;
+        await db.query(query, [status, id]);
+
+        console.log(`Status pengiriman ID ${id} berhasil diupdate ke ${status}`);
+        return res.status(200).json({
+          success: true,
+          message: 'Status pengiriman berhasil diupdate berdasarkan ID',
+        });
+      } catch (error) {
+        console.error('Gagal update status by ID:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Gagal update status berdasarkan ID',
+        });
+      }
+    }
+
+    // ✅ 2️⃣ Kalau TIDAK ada ID tapi status dikirim → UPDATE yang cooking
+    if (!id && status) {
+      try {
+        const query = `
+          UPDATE pengiriman
+          SET status = ?
+          WHERE status = 'cooking'
+          ORDER BY timestamp ASC
+          LIMIT 1
+        `;
+        await db.query(query, [status]);
+
+        console.log(`Status pengiriman pertama dengan status 'cooking' berhasil diupdate ke ${status}`);
+        return res.status(200).json({
+          success: true,
+          message: 'Status pengiriman berhasil diupdate berdasarkan status sebelumnya',
+        });
+      } catch (error) {
+        console.error('Gagal update status by status:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Gagal update status berdasarkan status sebelumnya',
+        });
+      }
+    }
+
+    // ✅ 3️⃣ Kalau tidak ada ID & tidak update status → INSERT data baru
+    try {
+      const { total, timestamp, harga, username, phone, address } = req.body;
+
+      if (!total || !timestamp || !harga || !username || !phone || !address) {
+        return res.status(400).json({ success: false, message: 'Data tidak lengkap untuk INSERT' });
       }
 
-      const query = `
+      const insertQuery = `
         INSERT INTO pengiriman (total, timestamp, harga, username, phone, address, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, 'pending')
       `;
 
-      await db.query(query, [total, timestamp, harga, username, phone, address]);
+      await db.query(insertQuery, [total, timestamp, harga, username, phone, address]);
 
-      console.log('Data pengiriman berhasil disimpan');
+      console.log('Pengiriman baru berhasil disimpan');
       return res.status(200).json({
         success: true,
         message: 'Pengiriman berhasil disimpan ke database',
       });
 
     } catch (error) {
-      console.error('Gagal menyimpan ke database:', error);
+      console.error('Gagal insert pengiriman:', error);
       return res.status(500).json({
         success: false,
-        message: 'Terjadi kesalahan saat menyimpan ke database',
+        message: 'Terjadi kesalahan saat insert pengiriman',
       });
     }
   }
