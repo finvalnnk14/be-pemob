@@ -10,19 +10,39 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (req.method === 'GET') {
+ if (req.method === 'GET') {
+  const { status } = req.query;
+
+  if (status) {
     try {
       const [rows] = await db.query(`
         SELECT id, total, timestamp, harga AS price, username, phone, address, status
         FROM pengiriman
+        WHERE status = ?
         ORDER BY timestamp DESC
-      `);
-      return res.status(200).json(rows);
+        LIMIT 1
+      `, [status]);
+      return res.status(200).json({ data: rows[0] });
     } catch (error) {
-      console.error('Gagal mengambil data dari database:', error);
-      return res.status(500).json({ message: 'Gagal mengambil data' });
+      console.error('Gagal mengambil data by status:', error);
+      return res.status(500).json({ message: 'Gagal mengambil data by status' });
     }
   }
+
+  // default: ambil semua
+  try {
+    const [rows] = await db.query(`
+      SELECT id, total, timestamp, harga AS price, username, phone, address, status
+      FROM pengiriman
+      ORDER BY timestamp DESC
+    `);
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error('Gagal mengambil data:', error);
+    return res.status(500).json({ message: 'Gagal mengambil data' });
+  }
+}
+
 
   if (req.method === 'POST') {
     const { id, status } = req.body;
